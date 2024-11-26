@@ -1,10 +1,31 @@
 <!DOCTYPE html>
-<h>Zetamon</h>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zetamon</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css" integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <button id="startButton" onclick="startGame()" class="pure-button">Start game</button>
 
-<p>fire -> water</p>
-
-<button id="0x"  >0x</button>
-<button id="0.5x">0.5x</button>
-<button id="1x"  >1x</button> 
-<button id="2x"  >2x</button>
+      <div id="quiz">
+        <p id="score">Total correct: 0</p>
+        <div class="types">
+          <img src="typeicons/qmark.png" alt="fire" id="attacking-image" />
+          cooks
+          <img src="typeicons/qmark.png" alt="water" id="defending-image" />
+        </div>
+        
+        <button id="btn-0x" onclick="respond(this, 0)" class="pure-button">raw</button>
+        <button id="btn-0.5x" onclick="respond(this, 0.5)" class="pure-button">undercooked</button>
+        <button id="btn-1x" onclick="respond(this, 1)" class="pure-button">well done</button>
+        <button id="btn-2x" onclick="respond(this, 2)" class="pure-button">burnt</button>
+        <div id="result"></div>
+      </div>
+    </main>
+  </body>
+  <script src="script.js"></script>
 </html>

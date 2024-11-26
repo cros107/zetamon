@@ -1,0 +1,47 @@
+button {
+  width: 150px;
+}
+
+main {
+  background-color: rgb(68, 87, 105);
+  color: rgb(246, 246, 246);
+  font-family: "Roboto", sans-serif;
+  font-size: large;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+}
+
+#startButton {
+  margin-top: 50px;
+  /* display: flex */
+}
+
+#quiz {
+  display: none; /* switch to flex when quiz starts */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.types {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.correct {
+  background-color: rgb(102, 231, 102);
+}
+
+.incorrect {
+  background-color: rgb(244, 115, 115);
+}
+
+.hint {
+  background-color: rgb(93, 174, 245);
+}
