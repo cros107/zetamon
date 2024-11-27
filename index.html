@@ -9,10 +9,17 @@
   </head>
   <body>
     <main>
-      <button id="startButton" onclick="startGame()" class="pure-button">Start game</button>
+      <div id="home">
+        <button id="startButton" onclick="startGame()" class="pure-button">Start game</button>
+        <p hidden id="final-score"></p>
+        <p hidden id="high-score"></p>
+      </div>  
 
-      <div id="quiz">
-        <p id="score">Total correct: 0</p>
+      <div id="quiz" hidden>
+        <div id="info-bar">
+            <div id="score"></div>
+            <div id="timer"></div>
+        </div>
         <div class="types">
           <img src="typeicons/qmark.png" alt="fire" id="attacking-image" />
           cooks

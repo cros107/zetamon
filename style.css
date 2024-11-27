@@ -13,15 +13,31 @@ main {
   flex-direction: column;
   justify-content: start;
   align-items: center;
+  padding-top: 50px; /* or use margin top for startButton */
+  box-sizing: border-box;
+}
+
+#home {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#info-bar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 
 #startButton {
-  margin-top: 50px;
+  /* margin-top: 50px; */
   /* display: flex */
 }
 
 #quiz {
-  display: none; /* switch to flex when quiz starts */
+  display: flex; /* switch to flex when quiz starts */
+  /* i changed to hidden visibility */
   flex-direction: column;
   justify-content: center;
   align-items: center;

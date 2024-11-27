@@ -102,15 +102,84 @@ const excludeList = Array().concat(
   matchupList[2]
 );
 
+function createPlayerStats() {
+  playerStats = {currentQuestion: 0}
+  for (let atk of typesOrder) {
+    playerStats[atk] = {}
+    for (let def of typesOrder) {
+      playerStats[atk][def] = {score: 0, streak: 0, lastQuestion: -10000}
+    }
+  }
+  return playerStats
+}
+
+function loadPlayerStats() {
+  const savedStats = localStorage.getItem('playerStats');
+  if (savedStats) {
+    return JSON.parse(savedStats);
+  } else {
+    return createPlayerStats();
+  }
+}
+
+function savePlayerStats(playerStats) {
+  localStorage.setItem('playerStats', JSON.stringify(playerStats));
+}
+
+function loadHighScore() {
+  const savedHighScore = localStorage.getItem('quizHighScore');
+  if (savedHighScore) {
+    return parseInt(savedHighScore);
+  } else {
+    return null;
+  }
+}
+
+function saveHighScore(highScore) {
+  localStorage.setItem('quizHighScore', highScore);
+}
+
+function initScoreMap(playerState) {
+  scoreMap = {}
+  for (let atk of typesOrder) {
+    for (let def of typesOrder) {
+      score = playerState[atk][def].score
+      if (!(score in scoreMap)) {
+        scoreMap[score] = []
+      }
+      scoreMap[score].push([atk, def])
+    }
+  }
+  return scoreMap
+}
+
+function initScores() {
+
+}
+
 let globalState = {
   playing: false, //if false show start game screen, if true show quiz
+  playerStats: loadPlayerStats(), //map pairs to their info
+  scoreMap: initScoreMap(playerStats), //map score to pairs with that score
+  scores: Object.keys(scoreMap).map(Number).sort(), //sorted list of possible scores
+  bag: [],
+  quizHighScore: loadHighScore(),
 };
 
 let globalView = {
-  startButton: document.getElementById("startButton"),
+  finalScore: document.getElementById("final-score"),
+  highScore: document.getElementById("high-score"),
+  home: document.getElementById("home"),
 };
 
-let quizState = {
+// update high score if necessary
+if (globalState.quizHighScore !== null) {
+  globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
+  globalView.highScore.hidden = false;
+}
+
+
+const defaultQuizState = {
   attackingType: null,
   defendingType: null,
   effectiveness: null,
@@ -118,6 +187,8 @@ let quizState = {
   total: 0,
   waiting: false,
 };
+
+let quizState = { ...defaultQuizState };
 
 let quizView = {
   quiz: document.getElementById("quiz"),
@@ -159,15 +230,53 @@ function weightedRandomTypes(neutralRate = 0.3) {
   };
 }
 
-function nextQuiz() {
-  ({
-    attackingType: quizState.attackingType,
-    defendingType: quizState.defendingType,
-  } = weightedRandomTypes());
+function nextQuizRandom() {
+  let pair = weightedRandomTypes();
+  quizState.attackingType = pair.attackingType;
+  quizState.defendingType = pair.defendingType;
   quizState.effectiveness = getEffectiveness(
     quizState.attackingType,
     quizState.defendingType
   );
+  quizState.waiting = false;
+  nextQuizRender();
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i >= 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array
+}
+
+function nextBag() {
+  const bagSize = 20
+  const questionBuffer = -1
+  let bag = []
+  for (let score of globalState.scores) {
+    for (let pair of globalState.scoreMap[score]) {
+      let [atk, def] = pair
+      if (globalState.playerStats.currentQuestion - 
+          globalState.playerStats[atk][def].lastQuestion > questionBuffer) {
+        bag.push(pair)
+      }
+    }
+    if (bag.length >= bagSize) break
+  }
+  console.log(bag)
+  return shuffle(bag);
+}
+
+function nextQuizScored() {
+  if (globalState.bag.length == 0) {
+    globalState.bag = nextBag()
+  }
+  let [atk, def] = globalState.bag.pop();
+
+  quizState.attackingType = atk
+  quizState.defendingType = def
+  quizState.effectiveness = getEffectiveness(atk, def);
   quizState.waiting = false;
   nextQuizRender();
 }
@@ -205,20 +314,50 @@ function respond(button, answer) {
   }
   quizState.total++;
   quizState.waiting = true;
-  setTimeout(nextQuiz, 1000);
+  setTimeout(nextQuizScored, 1000);
 }
 
 function startGame() {
+  // reset quiz state
+  quizState = { ...defaultQuizState };
+
   globalState.playing = "true";
-  globalView.startButton.style.display = "none";
-  quizView.quiz.style.display = "flex";
-  nextQuiz();
+
+  globalView.home.hidden = true;
+  quizView.quiz.hidden = false;
+  nextQuizRandom();
+  startCountdown(40.0);
 }
 
 function endGame() {
   globalState.playing = "false";
-  globalView.startButton.style.display = "flex";
-  quizView.quiz.style.display = "none";
+  // globalView.startButton.style.display = "block";
+  
+  globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
+  
+  globalState.quizHighScore = Math.max(globalState.quizHighScore, quizState.corrects);
+  globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
+  saveHighScore(globalState.quizHighScore);
+  
+  globalView.home.hidden = false;
+  globalView.finalScore.hidden = false;
+  globalView.highScore.hidden = false;
+  
+  quizView.quiz.hidden = true;
+}
 
-  //can handle highscores and stuff in here etc
+function startCountdown(timer = 30.0) {
+  let timeLeft = timer;
+  const timerElement = document.getElementById("timer");
+  timerElement.textContent = `${timeLeft}`;
+  
+  const countdownInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(countdownInterval);
+      endGame();
+    } else {
+      timeLeft--;
+    }
+    timerElement.textContent = `${timeLeft}`;
+  }, 1000);
 }
