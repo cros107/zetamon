@@ -149,8 +149,8 @@ function trueRandomTypes() {
   return { attackingType, defendingType };
 }
 
-function weightedRandomTypes() {
-  let samplingList = Math.random() < 0.5 ? matchupList[1] : excludeList;
+function weightedRandomTypes(neutralRate = 0.3) {
+  let samplingList = Math.random() < neutralRate ? matchupList[1] : excludeList;
   let [attackingIndex, defendingIndex] =
     samplingList[Math.floor(Math.random() * samplingList.length)];
   return {
@@ -160,7 +160,10 @@ function weightedRandomTypes() {
 }
 
 function nextQuiz() {
-  (quizState.attackingType, quizState.defendingType) = weightedRandomTypes();
+  ({
+    attackingType: quizState.attackingType,
+    defendingType: quizState.defendingType,
+  } = weightedRandomTypes());
   quizState.effectiveness = getEffectiveness(
     quizState.attackingType,
     quizState.defendingType
