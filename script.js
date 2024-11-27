@@ -173,7 +173,7 @@ let globalView = {
 };
 
 // update high score if necessary
-if (globalState.quizHighScore instanceof Number) {
+if (globalState.quizHighScore !== null) {
   globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
   globalView.highScore.hidden = false;
 }
