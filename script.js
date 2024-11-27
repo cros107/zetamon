@@ -128,7 +128,7 @@ function savePlayerStats(playerStats) {
 
 function loadHighScore() {
   const savedHighScore = localStorage.getItem('quizHighScore');
-  if (savedHighScore) {
+  if (savedHighScore !== null) {
     return parseInt(savedHighScore);
   } else {
     return null;
@@ -173,7 +173,7 @@ let globalView = {
 };
 
 // update high score if necessary
-if (globalState.quizHighScore !== null) {
+if (globalState.quizHighScore instanceof Number) {
   globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
   globalView.highScore.hidden = false;
 }
@@ -264,7 +264,6 @@ function nextBag() {
     }
     if (bag.length >= bagSize) break
   }
-  console.log(bag)
   return shuffle(bag);
 }
 
@@ -336,6 +335,7 @@ function endGame() {
   globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
   
   globalState.quizHighScore = Math.max(globalState.quizHighScore, quizState.corrects);
+  
   globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
   saveHighScore(globalState.quizHighScore);
   
@@ -344,6 +344,12 @@ function endGame() {
   globalView.highScore.hidden = false;
   
   quizView.quiz.hidden = true;
+}
+
+function resetHighScore() {
+  globalState.quizHighScore = null;
+  globalView.highScore.hidden = true;
+  localStorage.removeItem('quizHighScore');
 }
 
 function startCountdown(timer = 30.0) {
