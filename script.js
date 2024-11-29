@@ -1,120 +1,41 @@
-const PokemonTypes = Object.freeze({
-  NORMAL: "normal",
-  FIRE: "fire",
-  WATER: "water",
-  ELECTRIC: "electric",
-  GRASS: "grass",
-  ICE: "ice",
-  FIGHTING: "fighting",
-  POISON: "poison",
-  GROUND: "ground",
-  FLYING: "flying",
-  PSYCHIC: "psychic",
-  BUG: "bug",
-  ROCK: "rock",
-  GHOST: "ghost",
-  DRAGON: "dragon",
-  DARK: "dark",
-  STEEL: "steel",
-  FAIRY: "fairy",
-});
+import { effectivenessMatrix, typesOrder, PokemonTypes } from "./typeData.js";
+import { matchupList, excludeList } from "./matchup.js";
+import { defaultQuizState } from "./state.js";
+import { toTuple, fromTuple } from "./helpers.js";
 
-const typesOrder = [
-  PokemonTypes.NORMAL,
-  PokemonTypes.FIRE,
-  PokemonTypes.WATER,
-  PokemonTypes.ELECTRIC,
-  PokemonTypes.GRASS,
-  PokemonTypes.ICE,
-  PokemonTypes.FIGHTING,
-  PokemonTypes.POISON,
-  PokemonTypes.GROUND,
-  PokemonTypes.FLYING,
-  PokemonTypes.PSYCHIC,
-  PokemonTypes.BUG,
-  PokemonTypes.ROCK,
-  PokemonTypes.GHOST,
-  PokemonTypes.DRAGON,
-  PokemonTypes.DARK,
-  PokemonTypes.STEEL,
-  PokemonTypes.FAIRY,
-];
+/**
+ * import JS types annotation
+ * 
+ * @import {QuizState} from "./state.js";
+ */
 
-const typeColors = {
-  [PokemonTypes.NORMAL]: "#A8A878",
-  [PokemonTypes.FIRE]: "#F08030",
-  [PokemonTypes.WATER]: "#6890F0",
-  [PokemonTypes.ELECTRIC]: "#F8D030",
-  [PokemonTypes.GRASS]: "#78C850",
-  [PokemonTypes.ICE]: "#98D8D8",
-  [PokemonTypes.FIGHTING]: "#C03028",
-  [PokemonTypes.POISON]: "#A040A0",
-  [PokemonTypes.GROUND]: "#E0C068",
-  [PokemonTypes.FLYING]: "#A890F0",
-  [PokemonTypes.PSYCHIC]: "#F85888",
-  [PokemonTypes.BUG]: "#A8B820",
-  [PokemonTypes.ROCK]: "#B8A038",
-  [PokemonTypes.GHOST]: "#705898",
-  [PokemonTypes.DRAGON]: "#7038F8",
-  [PokemonTypes.DARK]: "#705848",
-  [PokemonTypes.STEEL]: "#B8B8D0",
-  [PokemonTypes.FAIRY]: "#EE99AC",
-};
+/**
+ * @typedef {Object} PlayerStats
+ * @property {number} currentQuestion
+ * @property {Map<string, {score: number, streak: number, lastQuestion: number}>} stats
+ */
 
-const effectivenessMatrix = [
-  // normal, fire,  water, electric, grass, ice,   fighting, poison, ground, flying, psychic, bug,   rock,  ghost, dragon, dark,  steel, fairy
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5, 0, 1, 1, 0.5, 1], // normal
-  [1, 0.5, 0.5, 1, 2, 2, 1, 1, 1, 1, 1, 2, 0.5, 1, 0.5, 1, 2, 1], // fire
-  [1, 2, 0.5, 1, 0.5, 1, 1, 1, 2, 1, 1, 1, 2, 1, 0.5, 1, 1, 1], // water
-  [1, 1, 2, 0.5, 0.5, 1, 1, 1, 0, 2, 1, 1, 1, 1, 0.5, 1, 1, 1], // electric
-  [1, 0.5, 2, 1, 0.5, 1, 1, 0.5, 2, 0.5, 1, 0.5, 2, 1, 0.5, 1, 0.5, 1], // grass
-  [1, 0.5, 0.5, 1, 2, 0.5, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 0.5, 1], // ice
-  [2, 1, 1, 1, 1, 2, 1, 0.5, 1, 0.5, 0.5, 0.5, 2, 0, 1, 2, 2, 0.5], // fighting
-  [1, 1, 1, 1, 2, 1, 1, 0.5, 0.5, 1, 1, 1, 0.5, 0.5, 1, 1, 0, 2], // poison
-  [1, 2, 1, 2, 0.5, 1, 1, 2, 1, 0, 1, 0.5, 2, 1, 1, 1, 2, 1], // ground
-  [1, 1, 1, 0.5, 2, 1, 2, 1, 1, 1, 1, 2, 0.5, 1, 1, 1, 0.5, 1], // flying
-  [1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 0.5, 1, 1, 1, 1, 0, 0.5, 1], // psychic
-  [1, 0.5, 1, 1, 2, 1, 0.5, 0.5, 1, 0.5, 2, 1, 1, 0.5, 1, 2, 0.5, 0.5], // bug
-  [1, 2, 1, 1, 1, 2, 0.5, 1, 0.5, 2, 1, 2, 1, 1, 1, 1, 0.5, 1], // rock
-  [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 0.5, 1, 1], // ghost
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0.5, 0], // dragon
-  [1, 1, 1, 1, 1, 1, 0.5, 1, 1, 1, 2, 1, 1, 2, 1, 0.5, 1, 0.5], // dark
-  [1, 0.5, 0.5, 0.5, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0.5, 2], // steel
-  [1, 0.5, 1, 1, 1, 1, 2, 0.5, 1, 1, 1, 1, 1, 1, 2, 2, 0.5, 1], // fairy
-];
-
-function extractMatchup(effectiveness) {
-  return Array.from(Array(18))
-    .flatMap((_, i) => Array.from(Array(18)).map((_, j) => [i, j]))
-    .filter(([i, j]) => effectivenessMatrix[i][j] === effectiveness);
-}
-
-const matchupList = {
-  0: extractMatchup(0),
-  0.5: extractMatchup(0.5),
-  1: extractMatchup(1),
-  2: extractMatchup(2),
-};
-
-const excludeList = Array().concat(
-  matchupList[0],
-  matchupList[0.5],
-  matchupList[2]
-);
-
+/**
+ * 
+ * @returns {PlayerStats} 
+ */
 function createPlayerStats() {
-  playerStats = {currentQuestion: 0}
+  /**
+   * @type {PlayerStats}
+   */
+  let playerStats = { currentQuestion: 0 };
+  playerStats.stats = new Map();
   for (let atk of typesOrder) {
-    playerStats[atk] = {}
     for (let def of typesOrder) {
-      playerStats[atk][def] = {score: 0, streak: 0, lastQuestion: -10000}
+      let pair = toTuple(atk, def);
+      playerStats.stats[pair] = { score: 0, streak: 0, lastQuestion: -10000 };
     }
   }
-  return playerStats
+  return playerStats;
 }
 
 function loadPlayerStats() {
-  const savedStats = localStorage.getItem('playerStats');
+  const savedStats = localStorage.getItem("playerStats");
   if (savedStats) {
     return JSON.parse(savedStats);
   } else {
@@ -123,11 +44,11 @@ function loadPlayerStats() {
 }
 
 function savePlayerStats(playerStats) {
-  localStorage.setItem('playerStats', JSON.stringify(playerStats));
+  localStorage.setItem("playerStats", JSON.stringify(playerStats));
 }
 
 function loadHighScore() {
-  const savedHighScore = localStorage.getItem('quizHighScore');
+  const savedHighScore = localStorage.getItem("quizHighScore");
   if (savedHighScore !== null) {
     return parseInt(savedHighScore);
   } else {
@@ -136,35 +57,42 @@ function loadHighScore() {
 }
 
 function saveHighScore(highScore) {
-  localStorage.setItem('quizHighScore', highScore);
+  localStorage.setItem("quizHighScore", highScore);
 }
 
 function initScoreMap(playerState) {
-  scoreMap = {}
+  let scoreMap = {};
   for (let atk of typesOrder) {
     for (let def of typesOrder) {
-      score = playerState[atk][def].score
+      let pair = toTuple(atk, def)
+      const score = playerState.stats[pair].score;
       if (!(score in scoreMap)) {
-        scoreMap[score] = []
+        scoreMap[score] = new Set();
       }
-      scoreMap[score].push([atk, def])
+      scoreMap[score].add(pair);
     }
   }
-  return scoreMap
+  return scoreMap;
 }
 
-function initScores() {
-
-}
+function initScores() {}
 
 let globalState = {
   playing: false, //if false show start game screen, if true show quiz
-  playerStats: loadPlayerStats(), //map pairs to their info
-  scoreMap: initScoreMap(playerStats), //map score to pairs with that score
-  scores: Object.keys(scoreMap).map(Number).sort(), //sorted list of possible scores
+  playerStats: undefined, //map pairs to their info
+  scoreMap: undefined, //map score to pairs with that score
+  scores: undefined, //sorted list of possible scores
   bag: [],
   quizHighScore: loadHighScore(),
 };
+
+function initGlobalState() {
+  globalState.playerStats = loadPlayerStats();
+  globalState.scoreMap = initScoreMap(globalState.playerStats);
+  globalState.scores = Object.keys(globalState.scoreMap).map(Number).sort();
+}
+
+initGlobalState();
 
 let globalView = {
   finalScore: document.getElementById("final-score"),
@@ -174,23 +102,16 @@ let globalView = {
 
 // update high score if necessary
 if (globalState.quizHighScore !== null) {
-  globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
+  globalView.highScore.textContent = `Timed quiz high score: ${globalState.quizHighScore}`;
   globalView.highScore.hidden = false;
 }
 
-
-const defaultQuizState = {
-  attackingType: null,
-  defendingType: null,
-  effectiveness: null,
-  corrects: 0,
-  total: 0,
-  waiting: false,
-};
-
+/**
+ * @type {QuizState}
+ */
 let quizState = { ...defaultQuizState };
 
-let quizView = {
+const quizView = {
   quiz: document.getElementById("quiz"),
   attackingImage: document.getElementById("attacking-image"),
   defendingImage: document.getElementById("defending-image"),
@@ -202,6 +123,8 @@ let quizView = {
   },
   result: document.getElementById("result"),
   score: document.getElementById("score"),
+  timer: document.getElementById("timer"),
+  endQuiz: document.getElementById("end-quiz"),
 };
 
 function getEffectiveness(attackingType, defendingType) {
@@ -239,48 +162,55 @@ function nextQuizRandom() {
     quizState.defendingType
   );
   quizState.waiting = false;
-  nextQuizRender();
+  quizState.selectedEffectiveness = null;
 }
 
 function shuffle(array) {
   for (let i = array.length - 1; i >= 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
-  return array
+  return array;
 }
 
 function nextBag() {
-  const bagSize = 20
-  const questionBuffer = -1
-  let bag = []
+  const bagSize = 20;
+  const questionBuffer = -1;
+  let bag = [];
   for (let score of globalState.scores) {
     for (let pair of globalState.scoreMap[score]) {
-      let [atk, def] = pair
-      if (globalState.playerStats.currentQuestion - 
-          globalState.playerStats[atk][def].lastQuestion > questionBuffer) {
-        bag.push(pair)
+      if (
+        globalState.playerStats.currentQuestion -
+          globalState.playerStats.stats[pair].lastQuestion >
+        questionBuffer
+      ) {
+        bag.push(pair);
       }
     }
-    if (bag.length >= bagSize) break
+    if (bag.length >= bagSize) break;
   }
   return shuffle(bag);
 }
 
 function nextQuizScored() {
   if (globalState.bag.length == 0) {
-    globalState.bag = nextBag()
+    globalState.bag = nextBag();
   }
-  let [atk, def] = globalState.bag.pop();
+  let [atk, def] = fromTuple(globalState.bag.pop());
 
-  quizState.attackingType = atk
-  quizState.defendingType = def
+  quizState.attackingType = atk;
+  quizState.defendingType = def;
   quizState.effectiveness = getEffectiveness(atk, def);
   quizState.waiting = false;
-  nextQuizRender();
-}
+  quizState.selectedEffectiveness = null;
+  renderQuizState(quizState);
+} 
 
-function nextQuizRender() {
+/**
+ * 
+ * @param {QuizState} quizState 
+ */
+function renderQuizState(quizState) {
   quizView.attackingImage.setAttribute(
     "src",
     `typeicons/${quizState.attackingType}.png`
@@ -289,34 +219,94 @@ function nextQuizRender() {
     "src",
     `typeicons/${quizState.defendingType}.png`
   );
-  quizView.result.textContent = "";
   quizView.score.textContent = `${quizState.corrects}/${quizState.total} correct`;
-  for (const [effectiveness, button] of Object.entries(quizView.buttons)) {
-    button.classList.remove("correct", "incorrect", "hint");
-    button.onclick = () => respond(button, parseFloat(effectiveness));
-  }
+  renderQuizButtons(quizState);
+  renderTimer(quizState.timer);
+  quizView.endQuiz.hidden = quizState.timer !== null;
 }
 
-function respond(button, answer) {
+/**
+ * Render the buttons based on the current quiz state
+ *
+ * @param {QuizState} quizState
+ */
+function renderQuizButtons(quizState) {
+  // No effectiveness selected, clear all colors
+  if (quizState.selectedEffectiveness === null) {
+    for (const [_, button] of Object.entries(quizView.buttons)) {
+      button.classList.remove("hint");
+      button.classList.remove("correct");
+      button.classList.remove("incorrect");
+    }
+    quizView.result.textContent = "";
+    return;
+  }
+
+  // correct answer
+  if (quizState.selectedEffectiveness === quizState.effectiveness) {
+    quizView.buttons[quizState.effectiveness].classList.add("correct");
+    quizView.result.textContent = "Correct!";
+    return;
+  }
+
+  // incorrect answer
+  quizView.buttons[quizState.effectiveness].classList.add("hint");
+  quizView.buttons[quizState.selectedEffectiveness].classList.add("incorrect");
+  quizView.result.textContent = `Incorrect! Answer: ${quizState.effectiveness}x`;
+}
+
+function updateScoreMap(pair, oldScore, newScore) {
+  //scoreMap[atk][def].remove()
+}
+
+/**
+ * Respond to user answer, update quiz state and view
+ *
+ * @param {HTMLButtonElement} button
+ * @param {number} userResponseEffectiveness
+ */
+function respond(userResponseEffectiveness) {
   if (quizState.waiting) {
     return;
   }
-  if (answer === quizState.effectiveness) {
-    quizView.result.textContent = "Correct!";
+  quizState.selectedEffectiveness = userResponseEffectiveness;
+  let [atk, def] = [quizState.attackingType, quizState.defendingType]
+  let pair = toTuple(atk, def)
+  if (userResponseEffectiveness === quizState.effectiveness) {
     quizState.corrects++;
-    button.classList.add("correct");
-  } else {
-    quizView.result.textContent =
-      "Incorrect! Answer: " + quizState.effectiveness + "x";
-    button.classList.add("incorrect");
-    quizView.buttons[quizState.effectiveness].classList.add("hint");
+    
+    //update streak of [atk, def]
+    if (globalState.playerStats.stats[pair].streak < 0) {
+      globalState.playerStats.stats[pair].streak = 1
+    }
+    else globalState.playerStats.stats[pair].streak++
   }
+  else {
+    if (globalState.playerStats.stats[pair].streak > 0) {
+      globalState.playerStats.stats[pair].streak = -1
+    }
+    else globalState.playerStats.stats[pair].streak--
+  }
+  //update score of [atk, def]
+  globalState.playerStats.stats[pair].score += globalState.playerStats.stats[pair].streak
+
+  //we also need to update the groupings of matchups by their score, which is annoying
+  updateScoreMap(pair, globalState.playerStats.stats[pair].score, globalState.playerStats.stats[pair].score - globalState.playerStats.stats[pair].streak)
+
   quizState.total++;
   quizState.waiting = true;
   setTimeout(nextQuizScored, 1000);
-}
 
-function startGame() {
+  renderQuizState(quizState);
+}
+  
+window.respond = respond;
+
+/**
+ * 
+ * @param {null | number} timer : null if no timer, otherwise quiz time in seconds
+ */
+function startQuiz(timer = null) {
   // reset quiz state
   quizState = { ...defaultQuizState };
 
@@ -324,46 +314,129 @@ function startGame() {
 
   globalView.home.hidden = true;
   quizView.quiz.hidden = false;
-  nextQuizRandom();
-  startCountdown(40.0);
+
+  if (timer !== null) {
+    quizState.timer = timer;
+    startTimer();
+  }
+
+  nextQuizScored();
 }
 
-function endGame() {
+window.startQuiz = startQuiz;
+
+function endQuiz() {
   globalState.playing = "false";
-  // globalView.startButton.style.display = "block";
-  
+
   globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
+
+  if (quizState.timer !== null) {
+    globalState.quizHighScore = Math.max(
+      globalState.quizHighScore,
+      quizState.corrects
+    );
+    globalView.highScore.textContent = `Timed Quiz High score: ${globalState.quizHighScore}`;
+    saveHighScore(globalState.quizHighScore);
+  }
   
-  globalState.quizHighScore = Math.max(globalState.quizHighScore, quizState.corrects);
-  
-  globalView.highScore.textContent = `High score: ${globalState.quizHighScore}`;
-  saveHighScore(globalState.quizHighScore);
   
   globalView.home.hidden = false;
   globalView.finalScore.hidden = false;
   globalView.highScore.hidden = false;
-  
+
   quizView.quiz.hidden = true;
 }
+
+window.endQuiz = endQuiz;
 
 function resetHighScore() {
   globalState.quizHighScore = null;
   globalView.highScore.hidden = true;
-  localStorage.removeItem('quizHighScore');
+  localStorage.removeItem("quizHighScore");
 }
 
-function startCountdown(timer = 30.0) {
-  let timeLeft = timer;
-  const timerElement = document.getElementById("timer");
-  timerElement.textContent = `${timeLeft}`;
-  
+// Attach to window
+window.resetHighScore = resetHighScore;
+
+function startTimer() {
+  if (quizState.timer === null) {
+    throw new Error("Timer is not set in quiz state");
+  }
   const countdownInterval = setInterval(() => {
-    if (timeLeft <= 0) {
+    if (quizState.timer <= 0) {
       clearInterval(countdownInterval);
-      endGame();
+      endQuiz();
     } else {
-      timeLeft--;
+      quizState.timer--;
     }
-    timerElement.textContent = `${timeLeft}`;
+    renderTimer(quizState.timer);
   }, 1000);
 }
+
+function renderTimer(timer) {
+  if (timer === null) {
+    quizView.timer.textContent = "";
+    return;
+  }
+  quizView.timer.textContent = timer;
+}
+
+function showToast(message, duration = 1500) {
+  // Remove any existing toast
+  const existingToast = document.querySelector(".toast");
+  if (existingToast) {
+    existingToast.parentNode.removeChild(existingToast);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  const parent = document.getElementById("main-title");
+  parent.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 100);
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      toast.parentNode.removeChild(toast);
+    }, 300);
+  }, duration);
+}
+
+window.showToast = showToast;
+
+function toggleBrainRotText() {
+  let message;
+  if (localStorage.getItem("brainRotText") === "true") {
+    localStorage.removeItem("brainRotText");
+    message = "Disabled brain rot";
+  } else {
+    localStorage.setItem("brainRotText", "true");
+    message = "Enabled brain rot";
+  }
+  showToast(message);
+  updateBrainRotText();
+}
+
+window.toggleBrainRotText = toggleBrainRotText;
+
+function updateBrainRotText() {
+  if (localStorage.getItem("brainRotText") === "true") {
+    document.getElementById("attack-text").textContent = "cooks";
+    quizView.buttons[0].textContent = "raw";
+    quizView.buttons[0.5].textContent = "undercooked";
+    quizView.buttons[1].textContent = "well done";
+    quizView.buttons[2].textContent = "burnt";
+  } else {
+    document.getElementById("attack-text").textContent = "attacks";
+    quizView.buttons[0].textContent = "0x";
+    quizView.buttons[0.5].textContent = "0.5x";
+    quizView.buttons[1].textContent = "1x";
+    quizView.buttons[2].textContent = "2x";
+  }
+}
+
+updateBrainRotText();

@@ -22,6 +22,7 @@ main {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 10px;
 }
 
 #reset-high-score {
@@ -48,6 +49,41 @@ main {
   justify-content: center;
   align-items: center;
   gap: 10px;
+}
+
+
+#result {
+  height: 30px;
+}
+
+#main-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#main-title h1 {
+  margin: 5px;
+  opacity: 20%;
+  font-family: "Noto Sans Mono", monospace;
+  font-weight: normal;
+}
+
+.toast {
+  width: fit-content;
+  background-color: rgb(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+
+.toast {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.toast.show {
+  opacity: 1;
 }
 
 .types {

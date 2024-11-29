@@ -4,13 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zetamon</title>
+    <meta name="description" content="Pokemon type effectiveness quiz in timed mode or practice mode" />
+    <meta name="google-site-verification" content="-kDk6P53uXoHHf-NnWTgMC4b2X1v9nfXwVTjTX_XMP8" />
+    <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css" integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main>
+    <main id="main">
+      <div id="main-title" onclick="toggleBrainRotText()">
+        <h1>Zetamon</h1>
+      </div>
       <div id="home">
-        <button id="startButton" onclick="startGame()" class="pure-button">Start game</button>
+        <button id="timed-start" onclick="startQuiz(timer = 40.0)" class="pure-button">Timed Quiz <br \> (40s)</button>
+        <button id="untimed-start" onclick="startQuiz()" class="pure-button">Practice Mode</button>
         <p hidden id="final-score"></p>
         <p hidden id="high-score"></p>
         <p onclick="resetHighScore()" id="reset-high-score">Reset high score</p>
@@ -23,17 +30,18 @@
         </div>
         <div class="types">
           <img src="typeicons/qmark.png" alt="fire" id="attacking-image" />
-          cooks
+          <span id="attack-text">attacks</span>
           <img src="typeicons/qmark.png" alt="water" id="defending-image" />
         </div>
         
-        <button id="btn-0x" onclick="respond(this, 0)" class="pure-button">raw</button>
-        <button id="btn-0.5x" onclick="respond(this, 0.5)" class="pure-button">undercooked</button>
-        <button id="btn-1x" onclick="respond(this, 1)" class="pure-button">well done</button>
-        <button id="btn-2x" onclick="respond(this, 2)" class="pure-button">burnt</button>
+        <button id="btn-0x" onclick="respond(0)" class="pure-button">0x</button>
+        <button id="btn-0.5x" onclick="respond(0.5)" class="pure-button">0.5x</button>
+        <button id="btn-1x" onclick="respond(1)" class="pure-button">1x</button>
+        <button id="btn-2x" onclick="respond(2)" class="pure-button">2x</button>
         <div id="result"></div>
+        <button id="end-quiz" onclick="endQuiz()" class="pure-button" hidden>End Quiz</button>
       </div>
     </main>
   </body>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </html>
