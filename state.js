@@ -3,7 +3,7 @@ import { PokemonTypes } from "./typeData.js";
 /**
  * @typedef {Object} QuizState
  * @property {PokemonTypes | null} attackingType
- * @property {PokemonTypes | null} defendingType
+ * @property {[PokemonTypes, PokemonTypes] | PokemonTypes | null} defendingType
  * @property {number | null} effectiveness
  * @property {number | null} selectedEffectiveness
  * @property {number} corrects

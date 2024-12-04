@@ -82,3 +82,21 @@ export const effectivenessMatrix = [
   [1, 0.5, 0.5, 0.5, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0.5, 2], // steel
   [1, 0.5, 1, 1, 1, 1, 2, 0.5, 1, 1, 1, 1, 1, 1, 2, 2, 0.5, 1], // fairy
 ];
+
+/**
+ * 
+ * @param {PokemonTypes} attackingType 
+ * @param {PokemonTypes | {PokemonTypes, PokemonTypes}} defendingType 
+ * @returns {number}
+ */
+export function getEffectiveness(attackingType, defendingType) {
+  if (typeof defendingType !== "string") {
+    const [def1, def2] = defendingType;
+    const eff1 = getEffectiveness(attackingType, def1);
+    const eff2 = getEffectiveness(attackingType, def2);
+    return eff1 * eff2;
+  }
+  const attackingIndex = typesOrder.indexOf(attackingType);
+  const defendingIndex = typesOrder.indexOf(defendingType);
+  return effectivenessMatrix[attackingIndex][defendingIndex];
+}

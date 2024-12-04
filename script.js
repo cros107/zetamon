@@ -1,81 +1,25 @@
-import { effectivenessMatrix, typesOrder, PokemonTypes } from "./typeData.js";
-import { matchupList, excludeList } from "./matchup.js";
 import { defaultQuizState } from "./state.js";
-import { toTuple, fromTuple } from "./helpers.js";
-
+import { toTuple, fromTuple, shuffle } from "./helpers.js";
+import {
+  loadPlayerStats,
+  initScoreMap,
+  updateScoreMap,
+} from "./playerStats.js";
+import { loadHighScore, resetHighScore, saveHighScore, HighScoreCategory } from "./highscore.js";
+import { getEffectiveness } from "./typeData.js";
+import {
+  trueRandomSingleType,
+  trueRandomDualTypes,
+  trueRandomBothTypes,
+} from "./quiz.js";
 /**
  * import JS types annotation
- * 
+ *
  * @import {QuizState} from "./state.js";
  */
 
-/**
- * @typedef {Object} PlayerStats
- * @property {number} currentQuestion
- * @property {Map<string, {score: number, streak: number, lastQuestion: number}>} stats
- */
-
-/**
- * 
- * @returns {PlayerStats} 
- */
-function createPlayerStats() {
-  /**
-   * @type {PlayerStats}
-   */
-  let playerStats = { currentQuestion: 0 };
-  playerStats.stats = new Map();
-  for (let atk of typesOrder) {
-    for (let def of typesOrder) {
-      let pair = toTuple(atk, def);
-      playerStats.stats[pair] = { score: 0, streak: 0, lastQuestion: -10000 };
-    }
-  }
-  return playerStats;
-}
-
-function loadPlayerStats() {
-  const savedStats = localStorage.getItem("playerStats");
-  if (savedStats) {
-    return JSON.parse(savedStats);
-  } else {
-    return createPlayerStats();
-  }
-}
-
-function savePlayerStats(playerStats) {
-  localStorage.setItem("playerStats", JSON.stringify(playerStats));
-}
-
-function loadHighScore() {
-  const savedHighScore = localStorage.getItem("quizHighScore");
-  if (savedHighScore !== null) {
-    return parseInt(savedHighScore);
-  } else {
-    return null;
-  }
-}
-
-function saveHighScore(highScore) {
-  localStorage.setItem("quizHighScore", highScore);
-}
-
-function initScoreMap(playerState) {
-  let scoreMap = {};
-  for (let atk of typesOrder) {
-    for (let def of typesOrder) {
-      let pair = toTuple(atk, def)
-      const score = playerState.stats[pair].score;
-      if (!(score in scoreMap)) {
-        scoreMap[score] = new Set();
-      }
-      scoreMap[score].add(pair);
-    }
-  }
-  return scoreMap;
-}
-
-function initScores() {}
+// Attach to window from imports
+window.resetHighScore = resetHighScore;
 
 let globalState = {
   playing: false, //if false show start game screen, if true show quiz
@@ -83,7 +27,13 @@ let globalState = {
   scoreMap: undefined, //map score to pairs with that score
   scores: undefined, //sorted list of possible scores
   bag: [],
-  quizHighScore: loadHighScore(),
+  highScore: {
+    single: loadHighScore("40s-single-best"),
+    dual: loadHighScore("40s-dual-best"),
+    both: loadHighScore("40s-both-best"),
+  },
+  defendingType: "single",
+  countdownInterval: null,
 };
 
 function initGlobalState() {
@@ -94,84 +44,44 @@ function initGlobalState() {
 
 initGlobalState();
 
+/**
+ * @type {QuizState | null}
+ */
+let quizState = null;
+
 let globalView = {
   finalScore: document.getElementById("final-score"),
-  highScore: document.getElementById("high-score"),
+  highScore: {
+    single: document.getElementById("40s-single-best"),
+    dual: document.getElementById("40s-dual-best"),
+    both: document.getElementById("40s-both-best"),
+  },
   home: document.getElementById("home"),
+  defendingTypeButtons: {
+    single: document.getElementById("btn-type-single"),
+    dual: document.getElementById("btn-type-dual"),
+    both: document.getElementById("btn-type-both"),
+  },
 };
-
-// update high score if necessary
-if (globalState.quizHighScore !== null) {
-  globalView.highScore.textContent = `Timed quiz high score: ${globalState.quizHighScore}`;
-  globalView.highScore.hidden = false;
-}
-
-/**
- * @type {QuizState}
- */
-let quizState = { ...defaultQuizState };
 
 const quizView = {
   quiz: document.getElementById("quiz"),
   attackingImage: document.getElementById("attacking-image"),
   defendingImage: document.getElementById("defending-image"),
+  defendingImageDual: document.getElementById("defending-image-dual"),
   buttons: {
     0: document.getElementById("btn-0x"),
+    0.25: document.getElementById("btn-0.25x"),
     0.5: document.getElementById("btn-0.5x"),
     1: document.getElementById("btn-1x"),
     2: document.getElementById("btn-2x"),
+    4: document.getElementById("btn-4x"),
   },
   result: document.getElementById("result"),
   score: document.getElementById("score"),
   timer: document.getElementById("timer"),
   endQuiz: document.getElementById("end-quiz"),
 };
-
-function getEffectiveness(attackingType, defendingType) {
-  const attackingIndex = typesOrder.indexOf(attackingType);
-  const defendingIndex = typesOrder.indexOf(defendingType);
-  return effectivenessMatrix[attackingIndex][defendingIndex];
-}
-
-function randomType() {
-  return typesOrder[Math.floor(Math.random() * typesOrder.length)];
-}
-
-function trueRandomTypes() {
-  const attackingType = randomType();
-  const defendingType = randomType();
-  return { attackingType, defendingType };
-}
-
-function weightedRandomTypes(neutralRate = 0.3) {
-  let samplingList = Math.random() < neutralRate ? matchupList[1] : excludeList;
-  let [attackingIndex, defendingIndex] =
-    samplingList[Math.floor(Math.random() * samplingList.length)];
-  return {
-    attackingType: typesOrder[attackingIndex],
-    defendingType: typesOrder[defendingIndex],
-  };
-}
-
-function nextQuizRandom() {
-  let pair = weightedRandomTypes();
-  quizState.attackingType = pair.attackingType;
-  quizState.defendingType = pair.defendingType;
-  quizState.effectiveness = getEffectiveness(
-    quizState.attackingType,
-    quizState.defendingType
-  );
-  quizState.waiting = false;
-  quizState.selectedEffectiveness = null;
-}
-
-function shuffle(array) {
-  for (let i = array.length - 1; i >= 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
 
 function nextBag() {
   const bagSize = 20;
@@ -192,6 +102,33 @@ function nextBag() {
   return shuffle(bag);
 }
 
+function nextQuizRandom() {
+  // end quiz if too many incorrect answers in a timed quiz
+  if (quizState.timer !== null && quizState.total - quizState.corrects >= 3) {
+    if (quizState.timer !== null) {
+      endTimer();
+      showToast("Quiz ended due to too many incorrect answers", 3000);
+    }
+    endQuiz();
+  }
+
+  let pair = {
+    single: trueRandomSingleType,
+    dual: trueRandomDualTypes,
+    both: trueRandomBothTypes,
+  }[globalState.defendingType]();
+
+  quizState.attackingType = pair.attackingType;
+  quizState.defendingType = pair.defendingType;
+  quizState.effectiveness = getEffectiveness(
+    quizState.attackingType,
+    quizState.defendingType
+  );
+  quizState.waiting = false;
+  quizState.selectedEffectiveness = null;
+  renderQuizState(quizState);
+}
+
 function nextQuizScored() {
   if (globalState.bag.length == 0) {
     globalState.bag = nextBag();
@@ -204,21 +141,34 @@ function nextQuizScored() {
   quizState.waiting = false;
   quizState.selectedEffectiveness = null;
   renderQuizState(quizState);
-} 
+}
 
 /**
- * 
- * @param {QuizState} quizState 
+ *
+ * @param {QuizState} quizState
  */
 function renderQuizState(quizState) {
   quizView.attackingImage.setAttribute(
     "src",
     `typeicons/${quizState.attackingType}.png`
   );
-  quizView.defendingImage.setAttribute(
-    "src",
-    `typeicons/${quizState.defendingType}.png`
-  );
+  if (quizState.defendingType instanceof Array) {
+    quizView.defendingImageDual.hidden = false;
+    quizView.defendingImage.setAttribute(
+      "src",
+      `typeicons/${quizState.defendingType[0]}.png`
+    );
+    quizView.defendingImageDual.setAttribute(
+      "src",
+      `typeicons/${quizState.defendingType[1]}.png`
+    );
+  } else {
+    quizView.defendingImageDual.hidden = true;
+    quizView.defendingImage.setAttribute(
+      "src",
+      `typeicons/${quizState.defendingType}.png`
+    );
+  }
   quizView.score.textContent = `${quizState.corrects}/${quizState.total} correct`;
   renderQuizButtons(quizState);
   renderTimer(quizState.timer);
@@ -231,6 +181,10 @@ function renderQuizState(quizState) {
  * @param {QuizState} quizState
  */
 function renderQuizButtons(quizState) {
+  // Hide 0.25x and 4x options on single type defending
+  quizView.buttons[0.25].hidden = globalState.defendingType === "single";
+  quizView.buttons[4].hidden = globalState.defendingType === "single";
+
   // No effectiveness selected, clear all colors
   if (quizState.selectedEffectiveness === null) {
     for (const [_, button] of Object.entries(quizView.buttons)) {
@@ -255,8 +209,31 @@ function renderQuizButtons(quizState) {
   quizView.result.textContent = `Incorrect! Answer: ${quizState.effectiveness}x`;
 }
 
-function updateScoreMap(pair, oldScore, newScore) {
-  //scoreMap[atk][def].remove()
+/**
+ * Render the home screen, and optionally takes in the current quiz state
+ * to render the final score
+ *
+ * @param {QuizState | null} quizState
+ */
+function renderHome(quizState) {
+  globalView.home.hidden = globalState.playing;
+  quizView.quiz.hidden = !globalState.playing;
+
+  for (const [mode, highScore] of Object.entries(globalState.highScore)) {
+    globalView.highScore[mode].textContent = highScore;
+  }
+
+  if (quizState) {
+    globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
+  }
+  globalView.finalScore.hidden = quizState === null;
+
+  for (const [_, button] of Object.entries(globalView.defendingTypeButtons)) {
+    button.classList.remove("pure-button-active");
+  }
+  globalView.defendingTypeButtons[globalState.defendingType].classList.add(
+    "pure-button-active"
+  );
 }
 
 /**
@@ -270,40 +247,47 @@ function respond(userResponseEffectiveness) {
     return;
   }
   quizState.selectedEffectiveness = userResponseEffectiveness;
-  let [atk, def] = [quizState.attackingType, quizState.defendingType]
-  let pair = toTuple(atk, def)
   if (userResponseEffectiveness === quizState.effectiveness) {
     quizState.corrects++;
-    
-    //update streak of [atk, def]
-    if (globalState.playerStats.stats[pair].streak < 0) {
-      globalState.playerStats.stats[pair].streak = 1
-    }
-    else globalState.playerStats.stats[pair].streak++
   }
-  else {
-    if (globalState.playerStats.stats[pair].streak > 0) {
-      globalState.playerStats.stats[pair].streak = -1
-    }
-    else globalState.playerStats.stats[pair].streak--
-  }
-  //update score of [atk, def]
-  globalState.playerStats.stats[pair].score += globalState.playerStats.stats[pair].streak
 
-  //we also need to update the groupings of matchups by their score, which is annoying
-  updateScoreMap(pair, globalState.playerStats.stats[pair].score, globalState.playerStats.stats[pair].score - globalState.playerStats.stats[pair].streak)
+  //all this is only relevant in practice mode
+
+  // let [atk, def] = [quizState.attackingType, quizState.defendingType]
+  // let pair = toTuple(atk, def)
+  // if (userResponseEffectiveness === quizState.effectiveness) {
+  //   quizState.corrects++;
+
+  //   //update streak of [atk, def]
+  //   if (globalState.playerStats.stats[pair].streak < 0) {
+  //     globalState.playerStats.stats[pair].streak = 1
+  //   }
+  //   else globalState.playerStats.stats[pair].streak++
+  // }
+  // else {
+  //   if (globalState.playerStats.stats[pair].streak > 0) {
+  //     globalState.playerStats.stats[pair].streak = -1
+  //   }
+  //   else globalState.playerStats.stats[pair].streak--
+  // }
+  // //update score of [atk, def]
+  // globalState.playerStats.stats[pair].score += globalState.playerStats.stats[pair].streak
+
+  // //we also need to update the groupings of matchups by their score, which is annoying
+  // updateScoreMap(pair, globalState.playerStats.stats[pair].score, globalState.playerStats.stats[pair].score - globalState.playerStats.stats[pair].streak)
 
   quizState.total++;
   quizState.waiting = true;
-  setTimeout(nextQuizScored, 1000);
+  // setTimeout(nextQuizScored, 1000);
+  setTimeout(nextQuizRandom, 1000);
 
   renderQuizState(quizState);
 }
-  
+
 window.respond = respond;
 
 /**
- * 
+ *
  * @param {null | number} timer : null if no timer, otherwise quiz time in seconds
  */
 function startQuiz(timer = null) {
@@ -312,65 +296,55 @@ function startQuiz(timer = null) {
 
   globalState.playing = "true";
 
-  globalView.home.hidden = true;
-  quizView.quiz.hidden = false;
-
   if (timer !== null) {
     quizState.timer = timer;
     startTimer();
   }
 
-  nextQuizScored();
+  renderHome(quizState);
+  // nextQuizScored();
+  nextQuizRandom();
 }
 
 window.startQuiz = startQuiz;
 
 function endQuiz() {
-  globalState.playing = "false";
-
-  globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
+  globalState.playing = false;
 
   if (quizState.timer !== null) {
-    globalState.quizHighScore = Math.max(
-      globalState.quizHighScore,
+    globalState.highScore[globalState.defendingType] = Math.max(
+      globalState.highScore[globalState.defendingType],
       quizState.corrects
     );
-    globalView.highScore.textContent = `Timed Quiz High score: ${globalState.quizHighScore}`;
-    saveHighScore(globalState.quizHighScore);
+    saveHighScore(
+      HighScoreCategory[globalState.defendingType],
+      globalState.highScore[globalState.defendingType]
+    );
   }
-  
-  
-  globalView.home.hidden = false;
-  globalView.finalScore.hidden = false;
-  globalView.highScore.hidden = false;
 
-  quizView.quiz.hidden = true;
+  renderHome(quizState);
 }
 
 window.endQuiz = endQuiz;
-
-function resetHighScore() {
-  globalState.quizHighScore = null;
-  globalView.highScore.hidden = true;
-  localStorage.removeItem("quizHighScore");
-}
-
-// Attach to window
-window.resetHighScore = resetHighScore;
 
 function startTimer() {
   if (quizState.timer === null) {
     throw new Error("Timer is not set in quiz state");
   }
-  const countdownInterval = setInterval(() => {
+  globalState.countdownInterval = setInterval(() => {
     if (quizState.timer <= 0) {
-      clearInterval(countdownInterval);
+      clearInterval(globalState.countdownInterval);
       endQuiz();
     } else {
       quizState.timer--;
     }
     renderTimer(quizState.timer);
   }, 1000);
+}
+
+function endTimer() {
+  quizState.timer = 0;
+  clearInterval(globalState.countdownInterval);
 }
 
 function renderTimer(timer) {
@@ -427,16 +401,29 @@ function updateBrainRotText() {
   if (localStorage.getItem("brainRotText") === "true") {
     document.getElementById("attack-text").textContent = "cooks";
     quizView.buttons[0].textContent = "raw";
+    quizView.buttons[0.25].textContent = "rare";
     quizView.buttons[0.5].textContent = "undercooked";
     quizView.buttons[1].textContent = "well done";
     quizView.buttons[2].textContent = "burnt";
+    quizView.buttons[4].textContent = "deep fried";
   } else {
     document.getElementById("attack-text").textContent = "attacks";
     quizView.buttons[0].textContent = "0x";
+    quizView.buttons[0.25].textContent = "0.25x";
     quizView.buttons[0.5].textContent = "0.5x";
     quizView.buttons[1].textContent = "1x";
     quizView.buttons[2].textContent = "2x";
+    quizView.buttons[4].textContent = "4x";
   }
 }
 
 updateBrainRotText();
+
+function setDefenderTypeCount(mode) {
+  globalState.defendingType = mode;
+  renderHome(quizState);
+}
+
+window.setDefenderTypeCount = setDefenderTypeCount;
+
+renderHome(quizState);

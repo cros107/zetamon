@@ -15,14 +15,27 @@
   </head>
   <body>
     <main id="main">
-      <div id="main-title" onclick="toggleBrainRotText()">
-        <h1>Zetamon</h1>
+      <div id="main-title">
+        <h1 onclick="toggleBrainRotText()">Zetamon</h1>
       </div>
       <div id="home">
+        <p>Test your knowledge of Pokemon type effectiveness!</p>
+        <p>Choose whether the defending side have single or dual types</p>
+        <div class="pure-button-group" role="group" aria-label="...">
+          <button id="btn-type-single" class="pure-button" onClick="setDefenderTypeCount('single')">Single types</button>
+          <button id="btn-type-both" class="pure-button" onClick="setDefenderTypeCount('both')">Both</button>
+          <button id="btn-type-dual" class="pure-button" onClick="setDefenderTypeCount('dual')">Dual types</button>
+        </div>
+        <p>Play on 40 second quiz (ends early with 3 mistakes) 
+          or practice without a timer</p>
         <button id="timed-start" onclick="startQuiz(timer = 40.0)" class="pure-button">Timed Quiz <br \> (40s)</button>
         <button id="untimed-start" onclick="startQuiz()" class="pure-button">Practice Mode</button>
         <p hidden id="final-score"></p>
-        <p hidden id="high-score"></p>
+        <ul class="high-score-list">
+          <li class="high-score-item"><span class="high-score-label">40s Single Type Best</span> <span id="40s-single-best"></span></li>
+          <li class="high-score-item"><span class="high-score-label">40s Dual Type Best</span> <span id="40s-dual-best"></span></li>
+          <li class="high-score-item"><span class="high-score-label">40s Both Type Best</span> <span id="40s-both-best"></span></li>
+        </ul>
         <p onclick="resetHighScore()" id="reset-high-score">Reset high score</p>
       </div>  
 
@@ -35,12 +48,15 @@
           <img src="typeicons/qmark.png" alt="fire" id="attacking-image" />
           <span id="attack-text">attacks</span>
           <img src="typeicons/qmark.png" alt="water" id="defending-image" />
+          <img src="typeicons/qmark.png" alt="water" id="defending-image-dual" hidden/>
         </div>
         
         <button id="btn-0x" onclick="respond(0)" class="pure-button">0x</button>
+        <button id="btn-0.25x" onclick="respond(0.25)" class="pure-button">0.25x</button>
         <button id="btn-0.5x" onclick="respond(0.5)" class="pure-button">0.5x</button>
         <button id="btn-1x" onclick="respond(1)" class="pure-button">1x</button>
         <button id="btn-2x" onclick="respond(2)" class="pure-button">2x</button>
+        <button id="btn-4x" onclick="respond(4)" class="pure-button">4x</button>
         <div id="result"></div>
         <button id="end-quiz" onclick="endQuiz()" class="pure-button" hidden>End Quiz</button>
       </div>
