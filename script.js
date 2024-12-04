@@ -19,7 +19,15 @@ import {
  */
 
 // Attach to window from imports
-window.resetHighScore = resetHighScore;
+window.resetHighScore = () => {
+  resetHighScore();
+  globalState.highScore = {
+    single: loadHighScore("40s-single-best"),
+    dual: loadHighScore("40s-dual-best"),
+    both: loadHighScore("40s-both-best"),
+  };
+  renderHome(quizState);
+};
 
 let globalState = {
   playing: false, //if false show start game screen, if true show quiz

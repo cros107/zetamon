@@ -23,6 +23,6 @@ export function saveHighScore(mode = "40s-single-best", highScore) {
 }
 
 export function resetHighScore() {
-  Object.values(HighScoreCategory).forEach(localStorage.removeItem);
+  Object.values(HighScoreCategory).forEach(key => localStorage.removeItem(key));
 }
 
