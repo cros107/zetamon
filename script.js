@@ -5,7 +5,7 @@ import {
   initScoreMap,
   updateScoreMap,
 } from "./playerStats.js";
-import { loadHighScore, resetHighScore, saveHighScore, HighScoreCategory } from "./highscore.js";
+import { loadHighScore, resetHighScore, saveHighScore, HighScoreCategory } from "./highScore.js";
 import { getEffectiveness } from "./typeData.js";
 import {
   trueRandomSingleType,
@@ -158,23 +158,23 @@ function nextQuizScored() {
 function renderQuizState(quizState) {
   quizView.attackingImage.setAttribute(
     "src",
-    `typeicons/${quizState.attackingType}.png`
+    `type-icons/${quizState.attackingType}.png`
   );
   if (quizState.defendingType instanceof Array) {
     quizView.defendingImageDual.hidden = false;
     quizView.defendingImage.setAttribute(
       "src",
-      `typeicons/${quizState.defendingType[0]}.png`
+      `type-icons/${quizState.defendingType[0]}.png`
     );
     quizView.defendingImageDual.setAttribute(
       "src",
-      `typeicons/${quizState.defendingType[1]}.png`
+      `type-icons/${quizState.defendingType[1]}.png`
     );
   } else {
     quizView.defendingImageDual.hidden = true;
     quizView.defendingImage.setAttribute(
       "src",
-      `typeicons/${quizState.defendingType}.png`
+      `type-icons/${quizState.defendingType}.png`
     );
   }
   quizView.score.textContent = `${quizState.corrects}/${quizState.total} correct`;
@@ -281,7 +281,7 @@ function respond(userResponseEffectiveness) {
   // //update score of [atk, def]
   // globalState.playerStats.stats[pair].score += globalState.playerStats.stats[pair].streak
 
-  // //we also need to update the groupings of matchups by their score, which is annoying
+  // //we also need to update the groupings of match ups by their score, which is annoying
   // updateScoreMap(pair, globalState.playerStats.stats[pair].score, globalState.playerStats.stats[pair].score - globalState.playerStats.stats[pair].streak)
 
   quizState.total++;
