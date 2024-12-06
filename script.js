@@ -5,7 +5,7 @@ import {
   initScoreMap,
   updateScoreMap,
 } from "./playerStats.js";
-import { loadHighScore, resetHighScore, saveHighScore, HighScoreCategory } from "./highScore.js";
+import { loadHighScore, resetHighScore, saveHighScore, HighScoreCategory } from "./highScoreHelper.js";
 import { getEffectiveness } from "./typeData.js";
 import {
   trueRandomSingleType,
