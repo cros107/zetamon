@@ -19,7 +19,7 @@ export const PokemonTypes = Object.freeze({
   FAIRY: "fairy",
 });
 
-export const typesOrder = [
+export const typesOrder = Object.freeze([
   PokemonTypes.NORMAL,
   PokemonTypes.FIRE,
   PokemonTypes.WATER,
@@ -38,7 +38,7 @@ export const typesOrder = [
   PokemonTypes.DARK,
   PokemonTypes.STEEL,
   PokemonTypes.FAIRY,
-];
+]);
 
 export const typeColors = {
   [PokemonTypes.NORMAL]: "#A8A878",
@@ -90,12 +90,6 @@ export const effectivenessMatrix = [
  * @returns {number}
  */
 export function getEffectiveness(attackingType, defendingType) {
-  if (typeof defendingType !== "string") {
-    const [def1, def2] = defendingType;
-    const eff1 = getEffectiveness(attackingType, def1);
-    const eff2 = getEffectiveness(attackingType, def2);
-    return eff1 * eff2;
-  }
   const attackingIndex = typesOrder.indexOf(attackingType);
   const defendingIndex = typesOrder.indexOf(defendingType);
   return effectivenessMatrix[attackingIndex][defendingIndex];

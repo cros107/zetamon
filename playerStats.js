@@ -1,61 +1,91 @@
 import { typesOrder } from "./typeData.js";
 import { toTuple } from "./helpers.js";
 
-/**
- * @typedef {Object} PlayerStats
- * @property {number} currentQuestion
- * @property {Map<string, {score: number, streak: number, lastQuestion: number}>} stats
- */
-
-/**
- *
- * @returns {PlayerStats}
- */
-export function createPlayerStats() {
-  /**
-   * @type {PlayerStats}
-   */
-  let playerStats = { currentQuestion: 0 };
-  playerStats.stats = new Map();
-  for (let atk of typesOrder) {
-    for (let def of typesOrder) {
-      let pair = toTuple(atk, def);
-      playerStats.stats[pair] = { score: 0, streak: 0, lastQuestion: -10000 };
-    }
-  }
-  return playerStats;
-}
-
-export function loadPlayerStats() {
-  const savedStats = localStorage.getItem("playerStats");
-  if (savedStats) {
-    return JSON.parse(savedStats);
-  } else {
-    return createPlayerStats();
+class MatchupStats {
+  constructor() {
+    this.score = 0; //score for matchup
+    this.streak = 0; //streak of correct/incorrect (+/-) for matchup
+    this.lastQuestion = -10000; //last time this matchup was seen
   }
 }
 
-export function savePlayerStats(playerStats) {
-  localStorage.setItem("playerStats", JSON.stringify(playerStats));
-}
+export class PlayerStats {
+  constructor() {
+    this.currentQuestion = 0; //number of questions user has answered so far
+    this.stats = new Map(); //map from "tuple" of types to MatchupStats object
+    this.scoreMap = new Map(); //map from score to set of pairs with that score
 
-export function initScoreMap(playerState) {
-  let scoreMap = {};
-  for (let atk of typesOrder) {
-    for (let def of typesOrder) {
-      let pair = toTuple(atk, def);
-      const score = playerState.stats[pair].score;
-      if (!(score in scoreMap)) {
-        scoreMap[score] = new Set();
+    const savedStats = localStorage.getItem("playerStats");
+    if (savedStats) {
+      this.currentQuestion = savedStats.currentQuestion;
+      this.stats = savedStats.stats;
+    } else {
+      for (let atk of typesOrder) {
+        for (let def of typesOrder) {
+          const pair = toTuple(atk, def);
+          this.stats[pair] = new MatchupStats();
+        }
       }
-      scoreMap[score].add(pair);
+    }
+    this.initScoreMap()
+  }
+
+  initScoreMap() {
+    for (let atk of typesOrder) {
+      for (let def of typesOrder) {
+        const pair = toTuple(atk, def);
+        const score = this.stats[pair].score;
+        if (!(score in this.scoreMap)) {
+          this.scoreMap[score] = new Set();
+        }
+        this.scoreMap[score].add(pair);
+      }
     }
   }
-  return scoreMap;
-}
 
-export function initScores() {}
+  save() {
+    localStorage.setItem("playerStats", JSON.stringify(
+      {
+        currentQuestion: this.currentQuestion, 
+        stats: this.stats
+      }
+    ));
+  }
 
-export function updateScoreMap(pair, oldScore, newScore) {
-  //scoreMap[atk][def].remove()
+  win(pair) {
+    if (this.stats[pair].streak < 0) {
+      this.stats[pair].streak = 1;
+    } else {
+      this.stats[pair].streak++;
+    }
+    
+    oldScore = this.stats[pair].score;
+    newScore = this.stats[pair].score + this.stats[pair].streak;
+    this.stats[pair].score = newScore;
+    this.updateScoreMap(pair, oldScore, newScore)
+  }
+
+  lose(pair) {
+    if (this.stats[pair].streak > 0) {
+      this.stats[pair].streak = -1;
+    } else {
+      this.stats[pair].streak--;
+    }
+
+    let oldScore = this.stats[pair].score;
+    let newScore = this.stats[pair].score + this.stats[pair].streak;
+    this.stats[pair].score = newScore;
+    this.updateScoreMap(pair, oldScore, newScore)
+  }
+
+  updateScoreMap(pair, oldScore, newScore) {
+    this.scoreMap[oldScore].remove(pair)
+    if (this.scoreMap[oldScore].size() == 0) {
+      this.scoreMap.remove(oldScore)
+    }
+    if (!(newScore in this.scoreMap)) {
+      this.scoreMap[newScore] = new Set();
+    }
+    this.scoreMap[newScore].add(pair);
+  }
 }

@@ -1,9 +1,18 @@
 export const toTuple = (atk, def) => atk + " " + def;
 export const fromTuple = (atkdef) => atkdef.split(" ");
 export function shuffle(array) {
-  for (let i = array.length - 1; i >= 0; i--) {
+  let res = array.slice();
+  for (let i = res.length - 1; i >= 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    [res[i], res[j]] = [res[j], res[i]];
   }
-  return array;
+  return res;
+}
+
+export function arrayEqual(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false;
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) return false;
+  }
+  return true;
 }
