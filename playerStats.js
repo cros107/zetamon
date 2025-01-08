@@ -1,5 +1,5 @@
 import { typesOrder } from "./typeData.js";
-import { toTuple } from "./helpers.js";
+import { toTuple, shuffle } from "./helpers.js";
 
 class MatchupStats {
   constructor() {
@@ -13,6 +13,9 @@ export class PlayerStats {
   constructor() {
     this.currentQuestion = 0; //number of questions user has answered so far
     this.stats = new Map(); //map from "tuple" of types to MatchupStats object
+    /**
+     * @type {Map<number, Set<[PokemonTypes, PokemonTypes]>>}
+     */
     this.scoreMap = new Map(); //map from score to set of pairs with that score
 
     const savedStats = localStorage.getItem("playerStats");
@@ -87,5 +90,15 @@ export class PlayerStats {
       this.scoreMap[newScore] = new Set();
     }
     this.scoreMap[newScore].add(pair);
+  }
+
+  getKLowest(k) {
+    let scores = this.scoreMap.keys.sort();
+    let res = []
+    for (let score in scores) {
+      res += Array.from(this.scoreMap[score]);
+      if (res.length() > k) break;
+    }
+    return shuffle(res.slice(0, k));
   }
 }

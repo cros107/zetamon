@@ -1,5 +1,5 @@
-import { Quiz, PracticeQuiz, TimedQuiz } from "./quiz.js";
-import { toTuple, fromTuple, shuffle, arrayEqual } from "./helpers.js";
+import { Quiz, PracticeQuiz, TimedQuiz, TrainingQuiz } from "./quiz.js";
+import { arrayEqual, toTuple } from "./helpers.js";
 import { PlayerStats } from "./playerStats.js";
 import {
   loadHighScore,
@@ -7,17 +7,7 @@ import {
   saveHighScore,
   HighScoreCategory,
 } from "./highScoreHelper.js";
-import { getEffectiveness, typesOrder } from "./typeData.js";
-import {
-  trueRandomSingleType,
-  trueRandomDualTypes,
-  trueRandomBothTypes,
-} from "./quiz.js";
-/**
- * import JS types annotation
- *
- * @import {QuizState} from "./state.js";
- */
+import { typesOrder } from "./typeData.js";
 
 let globalState = {
   playing: false, //if false show start game screen, if true show quiz
@@ -74,60 +64,81 @@ const quizView = {
 
 let quiz = new Quiz(quizView, globalState.defendingTypesArray);
 
-
 /**
  * Render the home screen, and optionally takes in the current quiz state
  * to render the final score
  *
- * @param {QuizState | null} quizState
+ * @param {Quiz | null} quiz
  */
-function renderHome(quizState) {
+function renderHome(quiz) {
   globalView.home.hidden = globalState.playing;
   quizView.quiz.hidden = !globalState.playing;
 
   for (const [mode, highScore] of Object.entries(globalState.highScore)) {
-    globalView.highScore[mode].textContent = highScore;
+    if (globalView.highScore[mode])
+      globalView.highScore[mode].textContent = highScore;
   }
 
-  if (quizState) {
-    globalView.finalScore.textContent = `Final score: ${quizState.corrects}/${quizState.total}`;
-  }
-  globalView.finalScore.hidden = quizState === null;
+  if (globalView.finalScore)
+    globalView.finalScore.textContent = `Final score: ${quiz.corrects}/${quiz.total}`;
+
+  if (globalView.finalScore) globalView.finalScore.hidden = quiz === null;
 
   for (const [_, button] of Object.entries(globalView.defendingTypeButtons)) {
-    button.classList.remove("pure-button-active");
+    if (button) button.classList.remove("pure-button-active");
   }
-  globalView.defendingTypeButtons[
-    defendingTypeArrayToKey(globalState.defendingTypesArray)
-  ].classList.add("pure-button-active");
-}
 
+  if (
+    globalView.defendingTypeButtons[
+      defendingTypeArrayToKey(globalState.defendingTypesArray)
+    ]
+  ) {
+    globalView.defendingTypeButtons[
+      defendingTypeArrayToKey(globalState.defendingTypesArray)
+    ].classList.add("pure-button-active");
+  }
+}
 
 function startTimedQuiz(timer) {
   // reset quiz state
-  quiz = new TimedQuiz(quizView, globalState.defendingTypesArray, timer, endQuiz);
+  quiz = new TimedQuiz(
+    quizView,
+    globalState.defendingTypesArray,
+    timer,
+    endQuiz
+  );
   window.quiz = quiz;
 
   globalState.playing = "true";
   renderHome(quiz);
   startTimer(quiz);
-  
+
   quiz.nextQuiz();
 }
 
 function startPracticeQuiz() {
-  quiz = new PracticeQuiz(quizView, globalState.defendingTypesArray); 
-    window.quiz = quiz;
+  quiz = new PracticeQuiz(quizView, globalState.defendingTypesArray);
+  window.quiz = quiz;
 
-    globalState.playing = "true";
-    renderHome(quiz);
+  globalState.playing = "true";
+  renderHome(quiz);
 
-    quiz.nextQuiz();  
+  quiz.nextQuiz();
 }
 
+function startTrainingQuiz() {
+  quiz = new TrainingQuiz(quizView, [1]);
+  window.quiz = quiz;
+
+  globalState.playing = "true";
+  renderHome(quiz);
+
+  quiz.nextQuiz();
+}
 
 window.startPracticeQuiz = startPracticeQuiz;
 window.startTimedQuiz = startTimedQuiz;
+window.startTrainingQuiz = startTrainingQuiz;
 
 function endQuiz() {
   globalState.playing = false;
@@ -136,6 +147,8 @@ function endQuiz() {
     if (quiz.total - quiz.corrects >= 3) {
       showToast("Quiz ended early due to too many incorrect answers", 3000);
     }
+
+    endTimer();
 
     let categoryName = defendingTypeArrayToKey(globalState.defendingTypesArray);
     globalState.highScore[categoryName] = Math.max(
@@ -157,9 +170,14 @@ function startTimer(quiz) {
   if (quiz.timer === null) {
     throw new Error("Timer is not set in quiz state");
   }
+  if (globalState.countdownInterval !== null) {
+    throw new Error("Countdown interval already set");
+  }
+  quiz.view.timer.textContent = quiz.timer;
   globalState.countdownInterval = setInterval(() => {
     if (quiz.timer <= 0) {
       clearInterval(globalState.countdownInterval);
+      globalState.countdownInterval = null;
       endQuiz();
     } else {
       quiz.timer--;
@@ -170,9 +188,10 @@ function startTimer(quiz) {
 
 function endTimer() {
   quiz.timer = 0;
+  if (globalState.countdownInterval === null) return;
   clearInterval(globalState.countdownInterval);
+  globalState.countdownInterval = null;
 }
-
 
 function showToast(message, duration = 1500) {
   // Remove any existing toast
@@ -266,3 +285,47 @@ function preloadImages() {
 }
 
 preloadImages();
+
+import { fromTuple, sampleGradient } from "./helpers.js";
+function gridData() {
+  const gradient = [
+    { t: 0, color: { r: 255, g: 132, b: 108 } },
+    { t: 0.38, color: { r: 255, g: 220, b: 60 } },
+    { t: 1.0, color: { r: 143, g: 255, b: 165 } },
+  ];
+
+  let arr = Array.from({ length: 18 }, (_, i) =>
+    Array.from({ length: 18 }, (_, j) => ({ i: i, j: j }))
+  );
+  console.log(arr);
+  Object.entries(globalState.playerStats.stats).forEach(([key, value]) => {
+    let [atk, def] = fromTuple(key);
+    let i = typesOrder.indexOf(atk);
+    let j = typesOrder.indexOf(def);
+    arr[i][j] = value;
+    arr[i][j].score = Math.random();
+  });
+  console.log(arr);
+  return "<th width=64px height=64px/>" + 
+  typesOrder.map((type) => `<th><img src="type-icons/${type}.png" class="vert"></th>`).join("") +
+    arr
+    .map(
+      (row, i) =>
+        "<tr>" + `<td><img src="type-icons/${typesOrder[i]}.png"></td>` + 
+      row.map((cell) => `<td style="background-color: rgb(${sampleGradient(gradient, cell.score).r}, ${sampleGradient(gradient, cell.score).g}, ${sampleGradient(gradient, cell.score).b})"
+      ></td>`).join("") + "</tr>"
+    )
+    .join("");
+}
+
+function colourClass(score) {
+  let res = "matchup-0";
+  if (score >= 10) res = "matchup-10";
+  if (score >= 30) res = "matchup-30";
+  if (score >= 60) res = "matchup-60";
+  if (score >= 100) res = "matchup-100";
+  return res;
+}
+
+let table = document.getElementById("stats-table");
+table.innerHTML = gridData();

@@ -1,5 +1,6 @@
 html {
   background-color: rgb(68, 87, 105);
+  overflow-x: hidden;
 }
 
 button {
@@ -146,4 +147,34 @@ a {
 
 .high-score-label {
   width: 200px;
+}
+
+.vert {
+  transform: rotate(90deg) translateY(75%);
+}
+
+#stats-table {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 800px;
+}
+
+.matchup-0 {
+  background-color: rgb(255, 120, 120, 0.7);
+}
+
+.matchup-10 {
+  background-color: rgb(240, 191, 13, 0.7);
+}
+
+.matchup-30 {
+  background-color: rgb(182, 226, 24, 0.7);
+}
+
+.matchup-60 {
+  background-color: rgb(69, 224, 147, 0.7);
+}
+
+.matchup-100 {
+  background-color: rgb(7, 247, 167, 0.7);
 }

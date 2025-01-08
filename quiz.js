@@ -149,3 +149,39 @@ export class PracticeQuiz extends Quiz {
     this.view.endQuiz.hidden = false;
   }
 }
+
+export class TrainingQuiz extends Quiz {
+  constructor(view, numTypesArray, playerStats) {
+    super(view, numTypesArray);
+    this.playerStats = playerStats;
+    this.bag = []
+  }
+
+  respond(effectiveness) {
+    if (this.selected !== null) {
+      return;
+    }
+    this.selected = effectiveness;
+    this.total++;
+    if (effectiveness === this.answer()) {
+      this.corrects++;
+      this.playerStats.win(toTuple(this.attackingType, this.defendingTypes[0]));
+    } else {
+      this.playerStats.lose(toTuple(this.attackingType, this.defendingTypes[0]));
+    }
+    this.render();
+    setTimeout(this.nextQuiz.bind(this), 1000);
+  }
+
+  //override nextQuiz to include custom bag stuff
+  nextQuiz() {
+    if (this.bag.length() == 0) 
+      this.bag = this.playerStats.getKLowest(20);
+    const [atk, def] = this.bag.pop();
+    this.attackingType = atk
+    this.defendingTypes = [def];
+    this.selected = null;
+    this.render();
+  }
+  
+}

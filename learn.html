@@ -20,8 +20,11 @@
       </div>
       <div id="home">
         <p>Learn the Pokemon type chart!</p>
-        <p>The game will adapt to focus on your weaknesses. Answer a matchup correctly to increase your <b>mastery</b> of that type.</p>
-        <button id="training-start" onclick="startQuiz()" class="pure-button">Training Mode</button>
+        <p>The game will adapt to help you improve by targeting the matchups you struggle with.</p>
+        <button id="training-start" onclick="startTrainingQuiz()" class="pure-button">Training Mode</button>
+        <div id="training-stats">
+          <table id="stats-table"> </table>
+        </div>
       </div>  
 
       <div id="quiz" hidden>
@@ -35,13 +38,14 @@
           <img src="type-icons/qmark.png" alt="water" id="defending-image" />
         </div>
         
-        <button id="btn-0x" onclick="respond(0)" class="pure-button">0x</button>
-        <button id="btn-0.5x" onclick="respond(0.5)" class="pure-button">0.5x</button>
-        <button id="btn-1x" onclick="respond(1)" class="pure-button">1x</button>
-        <button id="btn-2x" onclick="respond(2)" class="pure-button">2x</button>
-        <button id="end-quiz" onclick="endQuiz()" class="pure-button" hidden>End Quiz</button>
+        <button id="btn-0x" onclick="quiz.respond(0)" class="pure-button">0x</button>
+        <button id="btn-0.25x" onclick="quiz.respond(0.25)" class="pure-button">0.25x</button>
+        <button id="btn-0.5x" onclick="quiz.respond(0.5)" class="pure-button">0.5x</button>
+        <button id="btn-1x" onclick="quiz.respond(1)" class="pure-button">1x</button>
+        <button id="btn-2x" onclick="quiz.respond(2)" class="pure-button">2x</button>
+        <button id="btn-4x" onclick="quiz.respond(4)" class="pure-button">4x</button>
       </div>
     </main>
   </body>
-  <script type="module" src="learn.js"></script>
+  <script type="module" src="script.js"></script>
 </html>
