@@ -1,5 +1,6 @@
 import { PokemonTypes, typesOrder, getEffectiveness } from "./typeData.js";
-import { arrayEqual, shuffle } from "./helpers.js";
+import { arrayEqual, toTuple, fromTuple, shuffle } from "./helpers.js";
+import { endQuiz, gridData } from "./script.js";
 
 function randomType() {
   return typesOrder[Math.floor(Math.random() * typesOrder.length)];
@@ -175,13 +176,18 @@ export class TrainingQuiz extends Quiz {
 
   //override nextQuiz to include custom bag stuff
   nextQuiz() {
-    if (this.bag.length() == 0) 
-      this.bag = this.playerStats.getKLowest(20);
-    const [atk, def] = this.bag.pop();
+    if (this.bag.length == 0) {
+      this.bag = this.playerStats.getKLowest(3);
+    }
+    const [atk, def] = fromTuple(this.bag.pop());
     this.attackingType = atk
     this.defendingTypes = [def];
     this.selected = null;
     this.render();
   }
-  
+
+  endQuiz() {
+    document.getElementById("stats-table").innerHTML = gridData();
+    endQuiz();
+  }
 }

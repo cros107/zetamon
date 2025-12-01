@@ -1,5 +1,5 @@
 import { Quiz, PracticeQuiz, TimedQuiz, TrainingQuiz } from "./quiz.js";
-import { arrayEqual, toTuple } from "./helpers.js";
+import { arrayEqual, fromTuple, sampleGradient, toTuple } from "./helpers.js";
 import { PlayerStats } from "./playerStats.js";
 import {
   loadHighScore,
@@ -62,7 +62,7 @@ const quizView = {
   endQuiz: document.getElementById("end-quiz"),
 };
 
-let quiz = new Quiz(quizView, globalState.defendingTypesArray);
+let currentQuiz = null
 
 /**
  * Render the home screen, and optionally takes in the current quiz state
@@ -79,10 +79,10 @@ function renderHome(quiz) {
       globalView.highScore[mode].textContent = highScore;
   }
 
-  if (globalView.finalScore)
-    globalView.finalScore.textContent = `Final score: ${quiz.corrects}/${quiz.total}`;
+  if (globalView.finalScore && currentQuiz)
+    globalView.finalScore.textContent = `Final score: ${currentQuiz.corrects}/${currentQuiz.total}`;
 
-  if (globalView.finalScore) globalView.finalScore.hidden = quiz === null;
+  if (globalView.finalScore && currentQuiz) globalView.finalScore.hidden = currentQuiz === null;
 
   for (const [_, button] of Object.entries(globalView.defendingTypeButtons)) {
     if (button) button.classList.remove("pure-button-active");
@@ -107,7 +107,7 @@ function startTimedQuiz(timer) {
     timer,
     endQuiz
   );
-  window.quiz = quiz;
+  window.currentQuiz = quiz;
 
   globalState.playing = "true";
   renderHome(quiz);
@@ -118,7 +118,7 @@ function startTimedQuiz(timer) {
 
 function startPracticeQuiz() {
   quiz = new PracticeQuiz(quizView, globalState.defendingTypesArray);
-  window.quiz = quiz;
+  window.currentQuiz = quiz;
 
   globalState.playing = "true";
   renderHome(quiz);
@@ -127,8 +127,8 @@ function startPracticeQuiz() {
 }
 
 function startTrainingQuiz() {
-  quiz = new TrainingQuiz(quizView, [1]);
-  window.quiz = quiz;
+  quiz = new TrainingQuiz(quizView, globalState.defendingTypesArray, globalState.playerStats);
+  window.currentQuiz = quiz;
 
   globalState.playing = "true";
   renderHome(quiz);
@@ -140,7 +140,7 @@ window.startPracticeQuiz = startPracticeQuiz;
 window.startTimedQuiz = startTimedQuiz;
 window.startTrainingQuiz = startTrainingQuiz;
 
-function endQuiz() {
+export function endQuiz() {
   globalState.playing = false;
 
   if (quiz.timer !== null) {
@@ -286,8 +286,7 @@ function preloadImages() {
 
 preloadImages();
 
-import { fromTuple, sampleGradient } from "./helpers.js";
-function gridData() {
+export function gridData() {
   const gradient = [
     { t: 0, color: { r: 255, g: 132, b: 108 } },
     { t: 0.38, color: { r: 255, g: 220, b: 60 } },
@@ -297,30 +296,41 @@ function gridData() {
   let arr = Array.from({ length: 18 }, (_, i) =>
     Array.from({ length: 18 }, (_, j) => ({ i: i, j: j }))
   );
-  console.log(arr);
-  Object.entries(globalState.playerStats.stats).forEach(([key, value]) => {
-    let [atk, def] = fromTuple(key);
-    let i = typesOrder.indexOf(atk);
-    let j = typesOrder.indexOf(def);
-    arr[i][j] = value;
-    arr[i][j].score = Math.random();
-  });
-  console.log(arr);
+
+  let m = 0
+
+  for (let i = 0; i < typesOrder.length; i++) {
+    let atk = typesOrder[i]
+    for (let j = 0; j < typesOrder.length; j++) {
+      let def = typesOrder[j]
+      let pair = toTuple(atk, def)
+      arr[i][j] = globalState.playerStats.stats.get(pair);
+      m = m > arr[i][j].score ? m : arr[i][j].score;
+    }
+  }
+
+  globalState.playerStats["test"] = 1
+  console.log('max', m, globalState.playerStats["test"])
+
+  console.log(arr)
+
+  console.log("hi");
   return "<th width=64px height=64px/>" + 
   typesOrder.map((type) => `<th><img src="type-icons/${type}.png" class="vert"></th>`).join("") +
     arr
     .map(
       (row, i) =>
         "<tr>" + `<td><img src="type-icons/${typesOrder[i]}.png"></td>` + 
-      row.map((cell) => `<td style="background-color: rgb(${sampleGradient(gradient, cell.score).r}, ${sampleGradient(gradient, cell.score).g}, ${sampleGradient(gradient, cell.score).b})"
+      row.map((cell) => `<td class="${colourClass(cell.score)}"
       ></td>`).join("") + "</tr>"
     )
     .join("");
 }
 
 function colourClass(score) {
+  console.log("how",score)
   let res = "matchup-0";
-  if (score >= 10) res = "matchup-10";
+  if (score >= 1) {console.log("BRUIH"); res = "matchup-10";}
   if (score >= 30) res = "matchup-30";
   if (score >= 60) res = "matchup-60";
   if (score >= 100) res = "matchup-100";
