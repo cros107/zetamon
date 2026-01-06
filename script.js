@@ -310,11 +310,7 @@ export function gridData() {
   }
 
   globalState.playerStats["test"] = 1
-  console.log('max', m, globalState.playerStats["test"])
 
-  console.log(arr)
-
-  console.log("hi");
   return "<th width=64px height=64px/>" + 
   typesOrder.map((type) => `<th><img src="type-icons/${type}.png" class="vert"></th>`).join("") +
     arr
@@ -328,11 +324,10 @@ export function gridData() {
 }
 
 function colourClass(score) {
-  console.log("how",score)
   let res = "matchup-0";
-  if (score >= 1) {console.log("BRUIH"); res = "matchup-10";}
-  if (score >= 30) res = "matchup-30";
-  if (score >= 60) res = "matchup-60";
+  if (score >= 1) res = "matchup-10";
+  if (score >= 10) res = "matchup-30";
+  if (score >= 40) res = "matchup-60";
   if (score >= 100) res = "matchup-100";
   return res;
 }
