@@ -170,6 +170,9 @@ export class TrainingQuiz extends Quiz {
     } else {
       this.playerStats.lose(toTuple(this.attackingType, this.defendingTypes[0]));
     }
+
+    this.playerStats.save();
+
     this.render();
     setTimeout(this.nextQuiz.bind(this), 1000);
   }
