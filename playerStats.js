@@ -19,10 +19,10 @@ export class PlayerStats {
      */
     this.scoreMap = new Map(); //map from score to set of pairs with that score
 
-    const savedStats = localStorage.getItem("playerStats");
+    const savedStats = JSON.parse(localStorage.getItem("playerStats"));
     if (savedStats) {
       this.currentQuestion = savedStats.currentQuestion;
-      this.stats = savedStats.stats;
+      this.stats = new Map(savedStats.stats)
     } else {
       for (let atk of typesOrder) {
         for (let def of typesOrder) {
@@ -38,6 +38,8 @@ export class PlayerStats {
     for (let atk of typesOrder) {
       for (let def of typesOrder) {
         const pair = toTuple(atk, def);
+        console.log(this.stats);
+        console.log(pair)
         const score = this.stats.get(pair).score;
         if (!this.scoreMap.has(score)) {
           this.scoreMap.set(score, new Set());
@@ -51,7 +53,7 @@ export class PlayerStats {
     localStorage.setItem("playerStats", JSON.stringify(
       {
         currentQuestion: this.currentQuestion, 
-        stats: this.stats
+        stats: Array.from(this.stats.entries())
       }
     ));
   }

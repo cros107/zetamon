@@ -187,6 +187,7 @@ export class TrainingQuiz extends Quiz {
   }
 
   endQuiz() {
+    this.playerStats.save();
     document.getElementById("stats-table").innerHTML = gridData();
     endQuiz();
   }
